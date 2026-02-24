@@ -1,0 +1,2054 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CR Manager — クリエイティブレビュー一元管理</title>
+<style>
+  :root {
+    --primary: #2563EB;
+    --primary-dark: #1D4ED8;
+    --primary-light: #EFF6FF;
+    --purple: #7C3AED;
+    --purple-light: #F5F3FF;
+    --success: #059669;
+    --success-light: #ECFDF5;
+    --warning: #D97706;
+    --warning-light: #FFFBEB;
+    --danger: #DC2626;
+    --danger-light: #FEF2F2;
+    --slate-900: #0F172A;
+    --slate-800: #1E293B;
+    --slate-700: #334155;
+    --slate-600: #475569;
+    --slate-500: #64748B;
+    --slate-400: #94A3B8;
+    --slate-300: #CBD5E1;
+    --slate-200: #E2E8F0;
+    --slate-100: #F1F5F9;
+    --slate-50: #F8FAFC;
+    --white: #FFFFFF;
+    --sidebar-w: 240px;
+    --header-h: 60px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', 'Yu Gothic UI', sans-serif;
+    background: var(--slate-50);
+    color: var(--slate-800);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* ─── LOGIN ─── */
+  #loginScreen {
+    position: fixed; inset: 0;
+    background: linear-gradient(135deg, #1E293B 0%, #0F172A 50%, #1e3a5f 100%);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100;
+  }
+  .login-card {
+    background: var(--white);
+    border-radius: 16px;
+    padding: 48px 40px;
+    width: 420px;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.35);
+  }
+  .login-logo {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 32px;
+  }
+  .login-logo-icon {
+    width: 44px; height: 44px;
+    background: linear-gradient(135deg, var(--primary), var(--purple));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 20px; font-weight: 800;
+  }
+  .login-logo-text { font-size: 22px; font-weight: 700; color: var(--slate-800); }
+  .login-logo-sub { font-size: 11px; color: var(--slate-500); margin-top: 2px; }
+  .login-title { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+  .login-desc { color: var(--slate-500); font-size: 13px; margin-bottom: 28px; }
+  .role-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px; }
+  .role-btn {
+    border: 2px solid var(--slate-200);
+    background: var(--white);
+    border-radius: 10px;
+    padding: 14px 12px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+  }
+  .role-btn:hover { border-color: var(--primary); background: var(--primary-light); }
+  .role-btn.active { border-color: var(--primary); background: var(--primary-light); }
+  .role-btn .role-icon { font-size: 24px; margin-bottom: 6px; }
+  .role-btn .role-name { font-size: 13px; font-weight: 600; color: var(--slate-700); }
+  .role-btn .role-desc { font-size: 11px; color: var(--slate-500); margin-top: 2px; }
+  .form-group { margin-bottom: 16px; }
+  .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--slate-600); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .form-input {
+    width: 100%; padding: 10px 14px;
+    border: 1.5px solid var(--slate-200);
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--slate-800);
+    background: var(--slate-50);
+    transition: border-color 0.15s;
+  }
+  .form-input:focus { outline: none; border-color: var(--primary); background: var(--white); }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 14px; font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+    text-decoration: none;
+  }
+  .btn-primary {
+    background: var(--primary);
+    color: var(--white);
+    width: 100%;
+    padding: 12px;
+    font-size: 15px;
+  }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-ghost { background: transparent; color: var(--slate-600); border: 1.5px solid var(--slate-200); }
+  .btn-ghost:hover { background: var(--slate-100); }
+  .btn-success { background: var(--success); color: white; }
+  .btn-success:hover { background: #047857; }
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-danger:hover { background: #B91C1C; }
+  .btn-warning { background: var(--warning); color: white; }
+  .btn-warning:hover { background: #B45309; }
+  .btn-purple { background: var(--purple); color: white; }
+  .btn-purple:hover { background: #6D28D9; }
+  .btn-sm { padding: 6px 12px; font-size: 13px; }
+  .btn-xs { padding: 4px 8px; font-size: 12px; border-radius: 6px; }
+
+  /* ─── APP SHELL ─── */
+  #appShell { display: none; }
+  #appShell.visible { display: flex; height: 100vh; overflow: hidden; }
+
+  /* ─── SIDEBAR ─── */
+  .sidebar {
+    width: var(--sidebar-w);
+    background: var(--slate-900);
+    display: flex; flex-direction: column;
+    flex-shrink: 0;
+    overflow-y: auto;
+  }
+  .sidebar-logo {
+    display: flex; align-items: center; gap: 10px;
+    padding: 18px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .sidebar-logo-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--primary), var(--purple));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 16px; font-weight: 800;
+    flex-shrink: 0;
+  }
+  .sidebar-logo-text { color: white; font-size: 16px; font-weight: 700; }
+  .sidebar-logo-sub { color: var(--slate-400); font-size: 10px; }
+  .sidebar-user {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    margin-bottom: 8px;
+  }
+  .user-avatar {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; color: white;
+    flex-shrink: 0;
+  }
+  .user-name { color: white; font-size: 13px; font-weight: 600; }
+  .user-role-badge {
+    display: inline-block;
+    font-size: 10px; font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 10px;
+    margin-top: 2px;
+  }
+  .badge-agency { background: rgba(37,99,235,0.3); color: #93C5FD; }
+  .badge-client { background: rgba(124,58,237,0.3); color: #C4B5FD; }
+  .nav-section { padding: 0 12px; margin-bottom: 8px; }
+  .nav-section-title { font-size: 10px; font-weight: 700; color: var(--slate-500); text-transform: uppercase; letter-spacing: 0.08em; padding: 8px 8px 4px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 10px;
+    border-radius: 8px;
+    color: var(--slate-400);
+    cursor: pointer;
+    font-size: 13.5px;
+    font-weight: 500;
+    margin-bottom: 1px;
+    transition: all 0.12s;
+    user-select: none;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.06); color: var(--slate-200); }
+  .nav-item.active { background: rgba(37,99,235,0.2); color: #93C5FD; }
+  .nav-icon { font-size: 16px; flex-shrink: 0; width: 20px; text-align: center; }
+  .nav-badge {
+    margin-left: auto;
+    background: var(--danger);
+    color: white;
+    font-size: 10px; font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 10px;
+  }
+  .sidebar-bottom {
+    margin-top: auto;
+    padding: 16px 12px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  .logout-btn {
+    display: flex; align-items: center; gap: 8px;
+    color: var(--slate-500);
+    cursor: pointer;
+    font-size: 13px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    transition: all 0.12s;
+  }
+  .logout-btn:hover { color: var(--slate-300); background: rgba(255,255,255,0.05); }
+
+  /* ─── MAIN ─── */
+  .main-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .page-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 28px;
+    height: var(--header-h);
+    background: var(--white);
+    border-bottom: 1px solid var(--slate-200);
+    flex-shrink: 0;
+  }
+  .page-title { font-size: 17px; font-weight: 700; color: var(--slate-800); }
+  .page-header-actions { display: flex; gap: 8px; }
+  .page-content { flex: 1; overflow-y: auto; padding: 24px 28px; }
+
+  /* ─── VIEWS ─── */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ─── STATS ─── */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .stat-card {
+    background: var(--white);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid var(--slate-200);
+  }
+  .stat-label { font-size: 12px; font-weight: 600; color: var(--slate-500); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+  .stat-value { font-size: 28px; font-weight: 800; color: var(--slate-800); }
+  .stat-sub { font-size: 12px; color: var(--slate-500); margin-top: 4px; }
+  .stat-bar { height: 3px; background: var(--slate-100); border-radius: 2px; margin-top: 12px; overflow: hidden; }
+  .stat-bar-fill { height: 100%; border-radius: 2px; }
+
+  /* ─── CARDS ─── */
+  .card {
+    background: var(--white);
+    border-radius: 12px;
+    border: 1px solid var(--slate-200);
+    overflow: hidden;
+  }
+  .card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--slate-100);
+  }
+  .card-title { font-size: 15px; font-weight: 700; color: var(--slate-800); }
+  .card-body { padding: 20px; }
+
+  /* ─── STATUS BADGES ─── */
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px; font-weight: 600;
+  }
+  .status-draft { background: var(--slate-100); color: var(--slate-600); }
+  .status-submitted { background: #EFF6FF; color: #2563EB; }
+  .status-reviewing { background: #FFFBEB; color: #D97706; }
+  .status-approved { background: var(--success-light); color: var(--success); }
+  .status-revision { background: #FFF7ED; color: #EA580C; }
+  .status-rejected { background: var(--danger-light); color: var(--danger); }
+
+  /* ─── CR LIST TABLE ─── */
+  .filter-bar {
+    display: flex; gap: 10px; align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .filter-input {
+    padding: 8px 14px;
+    border: 1.5px solid var(--slate-200);
+    border-radius: 8px;
+    font-size: 13.5px;
+    color: var(--slate-700);
+    background: var(--white);
+    transition: border-color 0.15s;
+    min-width: 200px;
+  }
+  .filter-input:focus { outline: none; border-color: var(--primary); }
+  .filter-select {
+    padding: 8px 14px;
+    border: 1.5px solid var(--slate-200);
+    border-radius: 8px;
+    font-size: 13.5px;
+    color: var(--slate-700);
+    background: var(--white);
+    cursor: pointer;
+  }
+  .cr-table { width: 100%; border-collapse: collapse; }
+  .cr-table th {
+    text-align: left;
+    font-size: 11px; font-weight: 700;
+    color: var(--slate-500);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 10px 16px;
+    background: var(--slate-50);
+    border-bottom: 1px solid var(--slate-200);
+  }
+  .cr-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--slate-100);
+    vertical-align: middle;
+  }
+  .cr-table tr:last-child td { border-bottom: none; }
+  .cr-table tr:hover td { background: var(--slate-50); }
+  .cr-table tr { cursor: pointer; transition: background 0.1s; }
+  .cr-id { font-size: 12px; font-weight: 700; color: var(--slate-500); }
+  .cr-name { font-weight: 600; color: var(--slate-800); margin-bottom: 2px; }
+  .cr-client { font-size: 12px; color: var(--slate-500); }
+  .cr-date { font-size: 13px; color: var(--slate-600); }
+  .risk-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 12px; font-weight: 600;
+  }
+  .risk-critical { background: #FEE2E2; color: #DC2626; }
+  .risk-high { background: #FEF3C7; color: #D97706; }
+  .risk-medium { background: #FEF9C3; color: #CA8A04; }
+  .risk-low { background: #DCFCE7; color: #16A34A; }
+  .risk-none { background: var(--slate-100); color: var(--slate-500); }
+
+  /* ─── CR DETAIL ─── */
+  .detail-grid { display: grid; grid-template-columns: 1fr 360px; gap: 20px; }
+  .detail-main { display: flex; flex-direction: column; gap: 16px; }
+  .detail-sidebar { display: flex; flex-direction: column; gap: 16px; }
+  .back-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--slate-500); font-size: 13px;
+    cursor: pointer; margin-bottom: 16px;
+    transition: color 0.12s;
+  }
+  .back-btn:hover { color: var(--slate-700); }
+  .detail-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .detail-title { font-size: 20px; font-weight: 800; color: var(--slate-800); }
+  .detail-meta { display: flex; gap: 16px; margin-top: 8px; flex-wrap: wrap; }
+  .meta-item { font-size: 12.5px; color: var(--slate-500); }
+  .meta-item strong { color: var(--slate-700); }
+
+  /* ─── AI CHECK RESULTS ─── */
+  .ai-check-banner {
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .ai-check-critical { background: #FEF2F2; border: 1px solid #FECACA; }
+  .ai-check-warning { background: #FFFBEB; border: 1px solid #FDE68A; }
+  .ai-check-safe { background: var(--success-light); border: 1px solid #A7F3D0; }
+  .ai-icon { font-size: 22px; }
+  .ai-summary-title { font-weight: 700; font-size: 14px; }
+  .ai-summary-desc { font-size: 13px; color: var(--slate-600); margin-top: 2px; }
+
+  .check-items { display: flex; flex-direction: column; gap: 10px; }
+  .check-item {
+    border-radius: 10px;
+    border: 1px solid;
+    overflow: hidden;
+  }
+  .check-item-critical { border-color: #FECACA; }
+  .check-item-high { border-color: #FDE68A; }
+  .check-item-medium { border-color: #FEF08A; }
+  .check-item-low { border-color: #BBF7D0; }
+  .check-item-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px;
+    cursor: pointer;
+  }
+  .check-item-critical .check-item-header { background: #FEF2F2; }
+  .check-item-high .check-item-header { background: #FFFBEB; }
+  .check-item-medium .check-item-header { background: #FEFCE8; }
+  .check-item-low .check-item-header { background: #F0FDF4; }
+  .check-item-title { font-weight: 600; font-size: 13px; }
+  .check-item-body { padding: 12px 14px; background: white; }
+  .violation-text {
+    background: var(--slate-50);
+    border-left: 3px solid;
+    padding: 8px 12px;
+    border-radius: 0 6px 6px 0;
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+  .violation-text-critical { border-color: #DC2626; }
+  .violation-text-high { border-color: #D97706; }
+  .violation-text-medium { border-color: #CA8A04; }
+  .highlight-critical { background: #FEE2E2; padding: 1px 3px; border-radius: 3px; font-weight: 700; color: #991B1B; }
+  .highlight-high { background: #FEF3C7; padding: 1px 3px; border-radius: 3px; font-weight: 700; color: #92400E; }
+  .highlight-medium { background: #FEF9C3; padding: 1px 3px; border-radius: 3px; font-weight: 700; color: #713F12; }
+  .violation-reason { font-size: 12.5px; color: var(--slate-600); margin-top: 6px; }
+  .suggestion-box {
+    background: var(--primary-light);
+    border: 1px solid #BFDBFE;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-top: 8px;
+    font-size: 12.5px;
+  }
+  .suggestion-label { font-weight: 700; color: var(--primary); font-size: 11px; text-transform: uppercase; margin-bottom: 4px; }
+  .suggestion-text { color: var(--slate-700); }
+
+  /* ─── TEXT DISPLAY ─── */
+  .copy-text {
+    background: var(--slate-50);
+    border: 1px solid var(--slate-200);
+    border-radius: 10px;
+    padding: 16px;
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--slate-700);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .copy-text .hl-critical { background: rgba(220,38,38,0.15); border-bottom: 2px solid #DC2626; padding: 1px 2px; border-radius: 2px; }
+  .copy-text .hl-high { background: rgba(217,119,6,0.15); border-bottom: 2px solid #D97706; padding: 1px 2px; border-radius: 2px; }
+  .copy-text .hl-medium { background: rgba(202,138,4,0.12); border-bottom: 2px solid #CA8A04; padding: 1px 2px; border-radius: 2px; }
+
+  /* ─── COMMENTS ─── */
+  .comment-list { display: flex; flex-direction: column; gap: 12px; }
+  .comment-item { display: flex; gap: 10px; }
+  .comment-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: white;
+    flex-shrink: 0;
+  }
+  .comment-bubble {
+    flex: 1;
+    background: var(--slate-50);
+    border: 1px solid var(--slate-200);
+    border-radius: 10px;
+    padding: 10px 14px;
+  }
+  .comment-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .comment-author { font-size: 13px; font-weight: 700; }
+  .comment-time { font-size: 11px; color: var(--slate-400); }
+  .comment-text { font-size: 13.5px; color: var(--slate-700); line-height: 1.6; }
+  .comment-input-area { margin-top: 16px; display: flex; gap: 8px; }
+  .comment-textarea {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1.5px solid var(--slate-200);
+    border-radius: 10px;
+    font-size: 13.5px;
+    resize: none;
+    min-height: 80px;
+    font-family: inherit;
+    color: var(--slate-700);
+  }
+  .comment-textarea:focus { outline: none; border-color: var(--primary); }
+
+  /* ─── APPROVAL PANEL ─── */
+  .approval-panel { }
+  .approval-status-large {
+    text-align: center;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+  }
+  .approval-icon { font-size: 36px; margin-bottom: 8px; }
+  .approval-label { font-size: 16px; font-weight: 700; }
+  .approval-desc { font-size: 12.5px; color: var(--slate-500); margin-top: 4px; }
+  .action-buttons { display: flex; flex-direction: column; gap: 8px; }
+
+  /* ─── NEW CR FORM ─── */
+  .form-section { margin-bottom: 24px; }
+  .form-section-title {
+    font-size: 13px; font-weight: 700;
+    color: var(--slate-500);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--slate-200);
+  }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-select {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid var(--slate-200);
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--slate-700);
+    background: var(--slate-50);
+    font-family: inherit;
+  }
+  .form-textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid var(--slate-200);
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--slate-700);
+    background: var(--slate-50);
+    resize: vertical;
+    min-height: 140px;
+    font-family: inherit;
+    line-height: 1.6;
+  }
+  .form-textarea:focus, .form-select:focus { outline: none; border-color: var(--primary); background: var(--white); }
+  .upload-zone {
+    border: 2px dashed var(--slate-300);
+    border-radius: 10px;
+    padding: 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--slate-50);
+  }
+  .upload-zone:hover { border-color: var(--primary); background: var(--primary-light); }
+  .upload-icon { font-size: 32px; margin-bottom: 8px; }
+  .upload-title { font-size: 14px; font-weight: 600; color: var(--slate-700); margin-bottom: 4px; }
+  .upload-desc { font-size: 12px; color: var(--slate-400); }
+  .upload-files { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .upload-file-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--white); border: 1px solid var(--slate-200);
+    border-radius: 6px; padding: 5px 10px;
+    font-size: 12px; color: var(--slate-700);
+  }
+  .pre-check-area { margin-top: 16px; }
+
+  /* ─── YAKKI-HO STANDALONE ─── */
+  .yakki-page { max-width: 860px; margin: 0 auto; }
+  .yakki-input-area {
+    background: var(--white);
+    border: 1.5px solid var(--slate-200);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .yakki-input {
+    width: 100%;
+    border: none;
+    padding: 16px 20px;
+    font-size: 14px;
+    resize: none;
+    min-height: 180px;
+    font-family: inherit;
+    color: var(--slate-700);
+    line-height: 1.7;
+  }
+  .yakki-input:focus { outline: none; }
+  .yakki-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px;
+    background: var(--slate-50);
+    border-top: 1px solid var(--slate-200);
+  }
+  .yakki-char-count { font-size: 12px; color: var(--slate-400); }
+  .yakki-results { }
+  .score-overview {
+    display: grid; grid-template-columns: 200px 1fr; gap: 16px;
+    margin-bottom: 20px;
+  }
+  .score-gauge {
+    background: var(--white);
+    border: 1px solid var(--slate-200);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+  }
+  .score-circle {
+    width: 100px; height: 100px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 12px;
+    font-size: 28px; font-weight: 900;
+    border: 6px solid;
+  }
+  .score-A { border-color: #059669; color: #059669; background: #ECFDF5; }
+  .score-B { border-color: #2563EB; color: #2563EB; background: #EFF6FF; }
+  .score-C { border-color: #D97706; color: #D97706; background: #FFFBEB; }
+  .score-D { border-color: #DC2626; color: #DC2626; background: #FEF2F2; }
+  .score-label { font-size: 13px; font-weight: 600; color: var(--slate-600); }
+  .score-cats { display: flex; flex-direction: column; gap: 8px; justify-content: center; }
+  .score-cat-row { display: flex; align-items: center; gap: 10px; }
+  .score-cat-name { font-size: 12.5px; color: var(--slate-600); width: 160px; }
+  .score-cat-bar { flex: 1; height: 8px; background: var(--slate-100); border-radius: 4px; overflow: hidden; }
+  .score-cat-fill { height: 100%; border-radius: 4px; }
+  .score-cat-val { font-size: 12px; font-weight: 700; width: 30px; text-align: right; }
+
+  /* ─── DASHBOARD RECENT ─── */
+  .dash-grid { display: grid; grid-template-columns: 1fr 320px; gap: 20px; }
+  .recent-list { display: flex; flex-direction: column; }
+  .recent-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--slate-100);
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .recent-item:hover { background: var(--slate-50); }
+  .recent-item:last-child { border-bottom: none; }
+  .recent-icon {
+    width: 38px; height: 38px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px;
+    flex-shrink: 0;
+  }
+  .recent-info { flex: 1; min-width: 0; }
+  .recent-name { font-weight: 600; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .recent-client { font-size: 12px; color: var(--slate-500); }
+  .recent-date { font-size: 12px; color: var(--slate-400); flex-shrink: 0; }
+  .activity-list { display: flex; flex-direction: column; gap: 12px; }
+  .activity-item { display: flex; gap: 10px; align-items: flex-start; }
+  .activity-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    flex-shrink: 0; margin-top: 5px;
+  }
+  .activity-text { font-size: 13px; color: var(--slate-600); line-height: 1.5; }
+  .activity-time { font-size: 11.5px; color: var(--slate-400); margin-top: 2px; }
+
+  /* ─── MISC ─── */
+  .divider { height: 1px; background: var(--slate-200); margin: 16px 0; }
+  .tag {
+    display: inline-flex; align-items: center;
+    background: var(--slate-100);
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 12px;
+    color: var(--slate-600);
+    font-weight: 500;
+  }
+  .tag-blue { background: var(--primary-light); color: var(--primary); }
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--slate-400); }
+  .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-text { font-size: 15px; font-weight: 600; color: var(--slate-500); }
+  .empty-sub { font-size: 13px; margin-top: 6px; }
+
+  /* ─── TOAST ─── */
+  #toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--slate-800);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 500;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 999;
+    max-width: 340px;
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
+
+  /* ─── MODAL ─── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(15,23,42,0.5);
+    backdrop-filter: blur(2px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200;
+    display: none;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--white);
+    border-radius: 16px;
+    padding: 28px;
+    width: 500px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+  .modal-desc { color: var(--slate-500); font-size: 13.5px; margin-bottom: 20px; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+
+  /* ─── SCROLLBAR ─── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--slate-300); border-radius: 3px; }
+
+  /* ─── ANIMATIONS ─── */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .anim-in { animation: fadeInUp 0.25s ease forwards; }
+
+  .progress-ring { display: inline-flex; position: relative; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════ LOGIN ═══════════════════════════════════════ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon">CR</div>
+      <div>
+        <div class="login-logo-text">CR Manager</div>
+        <div class="login-logo-sub">クリエイティブレビュー一元管理</div>
+      </div>
+    </div>
+    <div class="login-title">ログイン</div>
+    <div class="login-desc">役割を選択してサービスにアクセスしてください</div>
+    <div class="role-selector">
+      <div class="role-btn active" onclick="selectRole('agency', this)">
+        <div class="role-icon">🏢</div>
+        <div class="role-name">代理店</div>
+        <div class="role-desc">CR提出・修正</div>
+      </div>
+      <div class="role-btn" onclick="selectRole('client', this)">
+        <div class="role-icon">💄</div>
+        <div class="role-name">クライアント</div>
+        <div class="role-desc">レビュー・承認</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">メールアドレス</label>
+      <input class="form-input" type="email" id="loginEmail" value="agency@adpro.jp" placeholder="your@email.com">
+    </div>
+    <div class="form-group">
+      <label class="form-label">パスワード</label>
+      <input class="form-input" type="password" id="loginPass" value="••••••••" placeholder="パスワード">
+    </div>
+    <button class="btn btn-primary" onclick="doLogin()">ログイン</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ APP SHELL ═══════════════════════════════════════ -->
+<div id="appShell">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">CR</div>
+      <div>
+        <div class="sidebar-logo-text">CR Manager</div>
+        <div class="sidebar-logo-sub">v1.0 プロトタイプ</div>
+      </div>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-avatar" id="sidebarAvatar" style="background:#2563EB">A</div>
+      <div>
+        <div class="user-name" id="sidebarName">田中 雅人</div>
+        <div class="user-role-badge badge-agency" id="sidebarBadge">代理店</div>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">メニュー</div>
+      <div class="nav-item active" onclick="navigate('dashboard', this)">
+        <span class="nav-icon">📊</span> ダッシュボード
+      </div>
+      <div class="nav-item" onclick="navigate('crlist', this)">
+        <span class="nav-icon">📋</span> CR一覧
+        <span class="nav-badge" id="pendingBadge">3</span>
+      </div>
+      <div class="nav-item" id="navNewCR" onclick="navigate('newcr', this)">
+        <span class="nav-icon">✏️</span> 新規CR作成
+      </div>
+      <div class="nav-item" onclick="navigate('yakki', this)">
+        <span class="nav-icon">⚖️</span> 薬機法チェッカー
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">管理</div>
+      <div class="nav-item" onclick="showToast('この機能は開発中です')">
+        <span class="nav-icon">👥</span> ユーザー管理
+      </div>
+      <div class="nav-item" onclick="showToast('この機能は開発中です')">
+        <span class="nav-icon">🏷️</span> クライアント管理
+      </div>
+      <div class="nav-item" onclick="showToast('この機能は開発中です')">
+        <span class="nav-icon">📈</span> レポート
+      </div>
+    </div>
+
+    <div class="sidebar-bottom">
+      <div class="nav-item" onclick="showToast('この機能は開発中です')" style="margin-bottom:4px">
+        <span class="nav-icon">⚙️</span> 設定
+      </div>
+      <div class="logout-btn" onclick="doLogout()">
+        <span>🚪</span> ログアウト
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main-area">
+    <!-- HEADER -->
+    <div class="page-header">
+      <div class="page-title" id="pageTitle">ダッシュボード</div>
+      <div class="page-header-actions" id="pageActions"></div>
+    </div>
+
+    <!-- PAGE CONTENT -->
+    <div class="page-content">
+
+      <!-- ──────── DASHBOARD ──────── -->
+      <div id="view-dashboard" class="view active">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">総CR数</div>
+            <div class="stat-value">24</div>
+            <div class="stat-sub">今月 +7件</div>
+            <div class="stat-bar"><div class="stat-bar-fill" style="width:70%;background:var(--primary)"></div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">レビュー待ち</div>
+            <div class="stat-value" style="color:var(--warning)">3</div>
+            <div class="stat-sub">平均待機 2.1日</div>
+            <div class="stat-bar"><div class="stat-bar-fill" style="width:30%;background:var(--warning)"></div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">承認済み</div>
+            <div class="stat-value" style="color:var(--success)">18</div>
+            <div class="stat-sub">承認率 82%</div>
+            <div class="stat-bar"><div class="stat-bar-fill" style="width:82%;background:var(--success)"></div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">要修正</div>
+            <div class="stat-value" style="color:var(--danger)">3</div>
+            <div class="stat-sub">修正率 18%</div>
+            <div class="stat-bar"><div class="stat-bar-fill" style="width:18%;background:var(--danger)"></div></div>
+          </div>
+        </div>
+
+        <div class="dash-grid">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">最近のCR</div>
+              <button class="btn btn-ghost btn-sm" onclick="navigate('crlist', document.querySelector('[onclick*=crlist]'))">すべて見る</button>
+            </div>
+            <div id="recentCRList"></div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">アクティビティ</div>
+            </div>
+            <div class="card-body">
+              <div class="activity-list">
+                <div class="activity-item">
+                  <div class="activity-dot" style="background:var(--danger)"></div>
+                  <div>
+                    <div class="activity-text">「肌荒れ修復クリーム LP」に薬機法違反の疑い（Critical）が検出されました</div>
+                    <div class="activity-time">10分前</div>
+                  </div>
+                </div>
+                <div class="activity-item">
+                  <div class="activity-dot" style="background:var(--success)"></div>
+                  <div>
+                    <div class="activity-text">「美白美容液 バナー」が承認されました</div>
+                    <div class="activity-time">1時間前</div>
+                  </div>
+                </div>
+                <div class="activity-item">
+                  <div class="activity-dot" style="background:var(--primary)"></div>
+                  <div>
+                    <div class="activity-text">鈴木さんが「育毛剤 LP（リニューアル）」にコメントを追加しました</div>
+                    <div class="activity-time">3時間前</div>
+                  </div>
+                </div>
+                <div class="activity-item">
+                  <div class="activity-dot" style="background:var(--warning)"></div>
+                  <div>
+                    <div class="activity-text">「日焼け止め SPF50+ バナー」が要修正として返却されました</div>
+                    <div class="activity-time">昨日 14:22</div>
+                  </div>
+                </div>
+                <div class="activity-item">
+                  <div class="activity-dot" style="background:var(--primary)"></div>
+                  <div>
+                    <div class="activity-text">新規CR「ヒアルロン酸サプリ 広告文」が提出されました</div>
+                    <div class="activity-time">昨日 11:05</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ──────── CR LIST ──────── -->
+      <div id="view-crlist" class="view">
+        <div class="filter-bar">
+          <input class="filter-input" type="text" placeholder="🔍 CR名・クライアント名で検索..." id="searchInput" oninput="filterCRs()">
+          <select class="filter-select" id="statusFilter" onchange="filterCRs()">
+            <option value="">すべてのステータス</option>
+            <option value="draft">下書き</option>
+            <option value="submitted">提出済み</option>
+            <option value="reviewing">レビュー中</option>
+            <option value="approved">承認済み</option>
+            <option value="revision">要修正</option>
+            <option value="rejected">却下</option>
+          </select>
+          <select class="filter-select" id="categoryFilter" onchange="filterCRs()">
+            <option value="">すべてのカテゴリ</option>
+            <option value="化粧品">化粧品</option>
+            <option value="医薬品">医薬品</option>
+            <option value="医薬部外品">医薬部外品</option>
+            <option value="サプリメント">サプリメント</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="filterCRs()">🔄 リセット</button>
+        </div>
+        <div class="card">
+          <table class="cr-table">
+            <thead>
+              <tr>
+                <th>CR ID</th>
+                <th>タイトル / クライアント</th>
+                <th>カテゴリ</th>
+                <th>ステータス</th>
+                <th>薬機法リスク</th>
+                <th>提出日</th>
+                <th>担当者</th>
+              </tr>
+            </thead>
+            <tbody id="crTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ──────── CR DETAIL ──────── -->
+      <div id="view-detail" class="view">
+        <div id="detailContent"></div>
+      </div>
+
+      <!-- ──────── NEW CR ──────── -->
+      <div id="view-newcr" class="view">
+        <div style="max-width:780px">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">✏️ 新規CR作成</div>
+            </div>
+            <div class="card-body">
+              <div class="form-section">
+                <div class="form-section-title">基本情報</div>
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label class="form-label">CR タイトル <span style="color:var(--danger)">*</span></label>
+                    <input class="form-input" type="text" id="newCRTitle" placeholder="例：美白クリーム LP 2024年春版">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">クライアント名 <span style="color:var(--danger)">*</span></label>
+                    <input class="form-input" type="text" id="newCRClient" placeholder="例：株式会社ビューティーコスメ">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">商品カテゴリ <span style="color:var(--danger)">*</span></label>
+                    <select class="form-select" id="newCRCategory">
+                      <option value="">選択してください</option>
+                      <option value="化粧品">化粧品</option>
+                      <option value="医薬品">医薬品</option>
+                      <option value="医薬部外品">医薬部外品</option>
+                      <option value="サプリメント">サプリメント</option>
+                      <option value="健康食品">健康食品</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">素材タイプ <span style="color:var(--danger)">*</span></label>
+                    <select class="form-select" id="newCRType">
+                      <option value="">選択してください</option>
+                      <option value="LP">LP（ランディングページ）</option>
+                      <option value="バナー">バナー広告</option>
+                      <option value="SNS">SNS投稿</option>
+                      <option value="動画">動画スクリプト</option>
+                      <option value="パンフレット">パンフレット</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">希望レビュー期限</label>
+                    <input class="form-input" type="date" id="newCRDeadline">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">優先度</label>
+                    <select class="form-select" id="newCRPriority">
+                      <option value="normal">通常</option>
+                      <option value="high">高（急ぎ）</option>
+                      <option value="urgent">至急</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-section">
+                <div class="form-section-title">テキストコピー</div>
+                <div class="form-group">
+                  <label class="form-label">広告文・コピーテキスト</label>
+                  <textarea class="form-textarea" id="newCRCopy" rows="8"
+                    placeholder="チェックしたい広告文やコピーテキストを貼り付けてください。薬機法AIがリアルタイムで問題箇所を検出します。"></textarea>
+                </div>
+                <button class="btn btn-purple btn-sm" onclick="preCheckCopy()">
+                  ⚡ 事前チェックを実行
+                </button>
+                <div id="preCheckResult" class="pre-check-area"></div>
+              </div>
+
+              <div class="form-section">
+                <div class="form-section-title">ファイル添付</div>
+                <div class="upload-zone" onclick="simulateUpload()">
+                  <div class="upload-icon">📎</div>
+                  <div class="upload-title">クリックしてファイルを選択</div>
+                  <div class="upload-desc">対応形式：JPG, PNG, MP4, PDF（最大100MB）</div>
+                  <div class="upload-files" id="uploadedFiles"></div>
+                </div>
+              </div>
+
+              <div class="form-section">
+                <div class="form-section-title">備考・依頼事項</div>
+                <textarea class="form-textarea" id="newCRNote" rows="4"
+                  placeholder="確認してほしいポイントや特記事項があれば記入してください"></textarea>
+              </div>
+
+              <div style="display:flex;gap:10px;justify-content:flex-end">
+                <button class="btn btn-ghost" onclick="navigate('dashboard', document.querySelector('[onclick*=dashboard]'))">キャンセル</button>
+                <button class="btn btn-ghost" onclick="saveDraft()">下書き保存</button>
+                <button class="btn btn-primary" onclick="submitCR()">📤 CRを提出する</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ──────── YAKKI-HO CHECKER ──────── -->
+      <div id="view-yakki" class="view">
+        <div class="yakki-page">
+          <div style="margin-bottom:20px">
+            <div style="font-size:16px;font-weight:700;color:var(--slate-700);margin-bottom:6px">⚖️ 薬機法 AIチェッカー</div>
+            <div style="color:var(--slate-500);font-size:13.5px">広告文・コピーテキストを入力すると、薬機法（医薬品医療機器等法）の観点から問題のある表現をAIが自動検出します。</div>
+          </div>
+          <div class="yakki-input-area">
+            <textarea class="yakki-input" id="yakkiInput"
+              placeholder="チェックしたい広告文・コピーテキストを入力してください...&#10;&#10;例：「このクリームを使えば、シミが絶対に消えます。肌を再生し、老化を治療する奇跡の美容液！」"></textarea>
+            <div class="yakki-toolbar">
+              <div style="display:flex;gap:8px">
+                <button class="btn btn-ghost btn-xs" onclick="loadSample(1)">サンプル1（化粧品）</button>
+                <button class="btn btn-ghost btn-xs" onclick="loadSample(2)">サンプル2（医薬部外品）</button>
+                <button class="btn btn-ghost btn-xs" onclick="document.getElementById('yakkiInput').value='';document.getElementById('yakkiResults').innerHTML=''">クリア</button>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px">
+                <span class="yakki-char-count" id="charCount">0文字</span>
+                <button class="btn btn-purple" onclick="runYakkiCheck()">⚡ チェック実行</button>
+              </div>
+            </div>
+          </div>
+          <div id="yakkiResults"></div>
+        </div>
+      </div>
+
+    </div><!-- /page-content -->
+  </div><!-- /main-area -->
+</div><!-- /appShell -->
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- APPROVAL MODAL -->
+<div class="modal-overlay" id="approvalModal">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">CRを承認しますか？</div>
+    <div class="modal-desc" id="modalDesc">承認するとエージェンシーに通知が送られます。</div>
+    <div class="form-group">
+      <label class="form-label">コメント（任意）</label>
+      <textarea class="comment-textarea" id="modalComment" rows="3" placeholder="承認コメントを入力..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">キャンセル</button>
+      <button class="btn" id="modalConfirmBtn" onclick="confirmAction()">確認</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  DATA
+// ═══════════════════════════════════════════════════════
+let currentUser = { role: 'agency', name: '田中 雅人', email: 'agency@adpro.jp', company: 'ADプロ株式会社' };
+let selectedRole = 'agency';
+let currentView = 'dashboard';
+let currentCRId = null;
+let pendingActionType = null;
+
+const MOCK_CRS = [
+  {
+    id: 'CR-2024-024',
+    title: '肌荒れ修復クリーム LP',
+    client: '株式会社メディカルビューティ',
+    category: '医薬部外品',
+    type: 'LP',
+    status: 'submitted',
+    riskLevel: 'critical',
+    submittedDate: '2024-01-24',
+    deadline: '2024-01-27',
+    assignee: '山田 花子',
+    priority: 'urgent',
+    copy: `この肌荒れ修復クリームは、荒れた肌を完全に治療します。
+たった7日間で細胞を再生・活性化し、驚異的な回復力で肌トラブルを根本から治す奇跡のクリーム。
+
+絶対に効果を実感できる美肌成分を凝縮！
+他社製品と比べて3倍の有効成分を配合。業界No.1の浸透力で、肌奥深くまでダイレクトに届きます。
+
+皮膚科医も認めた（※個人の感想です）この処方で、老化した肌を若返らせましょう。
+シミ・シワ・ニキビ跡を完璧に消去し、20代のような肌を取り戻せます。`,
+    files: [{ name: 'LP_design_v3.pdf', type: 'PDF', size: '4.2MB' }],
+    comments: [
+      { author: '山田 花子', role: 'client', time: '30分前', text: '「治療」「細胞再生」という表現は薬機法上問題があります。速やかに修正が必要です。' },
+      { author: '田中 雅人', role: 'agency', time: '25分前', text: '確認しました。修正案を作成中です。' },
+    ]
+  },
+  {
+    id: 'CR-2024-023',
+    title: '美白美容液 バナー広告セット',
+    client: '株式会社コスメブランド',
+    category: '化粧品',
+    type: 'バナー',
+    status: 'approved',
+    riskLevel: 'low',
+    submittedDate: '2024-01-22',
+    deadline: '2024-01-25',
+    assignee: '鈴木 一郎',
+    priority: 'normal',
+    copy: `【新登場】ビタミンC美白美容液
+みずみずしい肌へ導く、うるおいケア。
+毎日のスキンケアで、ハリのある明るい肌印象へ。
+※効果には個人差があります。`,
+    files: [
+      { name: 'banner_300x250.jpg', type: 'JPG', size: '245KB' },
+      { name: 'banner_728x90.jpg', type: 'JPG', size: '189KB' },
+    ],
+    comments: [
+      { author: '鈴木 一郎', role: 'client', time: '1日前', text: 'コピー全体的に問題ありません。承認します。' }
+    ]
+  },
+  {
+    id: 'CR-2024-022',
+    title: '日焼け止め SPF50+ バナー',
+    client: '株式会社サンケア',
+    category: '化粧品',
+    type: 'バナー',
+    status: 'revision',
+    riskLevel: 'medium',
+    submittedDate: '2024-01-20',
+    deadline: '2024-01-23',
+    assignee: '佐藤 美咲',
+    priority: 'high',
+    copy: `最強の紫外線ブロック！SPF50+ PA++++
+日本最高峰の紫外線カット率を誇る日焼け止め。
+塗れば確実にUVダメージをシャットアウト！
+汗・水に強い処方で、一日中完璧な肌を守ります。`,
+    files: [
+      { name: 'suncare_banner.png', type: 'PNG', size: '312KB' },
+    ],
+    comments: [
+      { author: '佐藤 美咲', role: 'client', time: '2日前', text: '「最強」「確実に」「完璧な」という表現を修正してください。根拠データがあれば添付資料も提出をお願いします。' }
+    ]
+  },
+  {
+    id: 'CR-2024-021',
+    title: '育毛剤 LP（リニューアル）',
+    client: '株式会社ヘルスケアプロ',
+    category: '医薬部外品',
+    type: 'LP',
+    status: 'reviewing',
+    riskLevel: 'high',
+    submittedDate: '2024-01-18',
+    deadline: '2024-01-26',
+    assignee: '高橋 健太',
+    priority: 'high',
+    copy: `医薬部外品 育毛剤「Re:Growth」リニューアル
+
+発毛を促進！薄毛・脱毛のお悩みに。
+有効成分ミノキシジル配合で、頭皮環境を改善。
+
+業界No.1（※2023年自社調べ）の育毛成分配合量を誇る、次世代育毛剤が新登場。
+使い続ければ必ず効果を実感できます。
+
+1000人に調査した結果、95%が満足と回答！（※個人の感想であり、効果を保証するものではありません）`,
+    files: [
+      { name: 'LP_hairgrowth_draft.pdf', type: 'PDF', size: '6.8MB' },
+      { name: 'ingredient_data.xlsx', type: 'XLSX', size: '245KB' }
+    ],
+    comments: [
+      { author: '高橋 健太', role: 'client', time: '6時間前', text: '「必ず効果を実感」という表現は要修正です。また、No.1表現の根拠データの提示をお願いします。' },
+      { author: '田中 雅人', role: 'agency', time: '5時間前', text: '承知しました。根拠データを準備中です。' }
+    ]
+  },
+  {
+    id: 'CR-2024-020',
+    title: 'ヒアルロン酸サプリ 広告文',
+    client: '株式会社ヘルシーライフ',
+    category: 'サプリメント',
+    type: 'SNS',
+    status: 'draft',
+    riskLevel: 'none',
+    submittedDate: '2024-01-24',
+    deadline: '2024-01-30',
+    assignee: '—',
+    priority: 'normal',
+    copy: `毎日のうるおいケアに。ヒアルロン酸サプリ新発売！
+飲むスキンケアで、体の内側からうるおいチャージ。
+※本品は栄養補助食品であり、疾病の診断・治療を目的としたものではありません。`,
+    files: [],
+    comments: []
+  },
+];
+
+// ═══════════════════════════════════════════════════════
+//  YAKKI-HO RULES
+// ═══════════════════════════════════════════════════════
+const YAKKI_RULES = [
+  {
+    category: '医薬品的効能の標榜（最重要）',
+    severity: 'critical',
+    icon: '🚨',
+    patterns: [
+      { regex: /治療|治る|治す/g, keyword: '治療/治る/治す', reason: '疾病の「治療」効果は医薬品にのみ許可された効能です。化粧品・医薬部外品では使用不可。', suggestion: '「ケアする」「整える」「サポートする」等の表現に変更してください。' },
+      { regex: /細胞(を)?(再生|活性化|修復)/g, keyword: '細胞再生/活性化', reason: '「細胞」への直接作用を示す表現は医薬品的効能にあたります。', suggestion: '「肌のターンオーバーをサポート」「肌コンディションを整える」等に変更。' },
+      { regex: /肌(を)?(再生|修復)/g, keyword: '肌再生/修復', reason: '皮膚の「再生・修復」は医薬品的効能として問題になります。', suggestion: '「肌を整える」「うるおいを与える」等の表現に変更してください。' },
+      { regex: /老化(を)?(治|防止|食い止め)/g, keyword: '老化を治/防止', reason: '「老化防止」を謳う表現は化粧品では認められていません。', suggestion: '「エイジングケア（年齢に応じたお手入れ）として」等の表現に。' },
+      { regex: /ウイルス(を)?(防|除去|殺)/g, keyword: 'ウイルス除去等', reason: 'ウイルスへの効果は医薬品的効能にあたります。', suggestion: '具体的なウイルス名・抗菌・抗ウイルス効果の表現を削除してください。' },
+    ]
+  },
+  {
+    category: '誇大広告・絶対的表現',
+    severity: 'high',
+    icon: '⚠️',
+    patterns: [
+      { regex: /絶対(に)?/g, keyword: '絶対に', reason: '「絶対」は効果・品質を断定する誇大表現です。個人差がある効果を断言してはなりません。', suggestion: '「実感しやすい」「多くの方に」等の表現に変更してください。' },
+      { regex: /必ず(効果)?/g, keyword: '必ず', reason: '「必ず」は効果を保証する表現として薬機法上問題です。', suggestion: '「多くの方にご満足いただいています」等に変更。' },
+      { regex: /奇跡(の|的|の)/g, keyword: '奇跡', reason: '「奇跡」は科学的根拠のない誇大表現です。', suggestion: '表現を削除し、具体的な成分・効果に置き換えてください。' },
+      { regex: /驚異的(な)?/g, keyword: '驚異的', reason: '「驚異的」は誇大な品質表現として問題になります。', suggestion: '「高い」「優れた」等の具体的かつ根拠ある表現に変更。' },
+      { regex: /完璧(に|な)/g, keyword: '完璧', reason: '「完璧」は過度な品質強調として指摘される可能性があります。', suggestion: '「しっかりと」「高い効果で」等に変更してください。' },
+    ]
+  },
+  {
+    category: '最上級・No.1表現',
+    severity: 'medium',
+    icon: '📊',
+    patterns: [
+      { regex: /No\.?1|ナンバーワン|№1/g, keyword: 'No.1表現', reason: 'No.1表現には客観的な調査根拠と出典の明示が必要です。', suggestion: '「No.1（○○調べ、対象：○○、n=○○、調査期間：○○）」等の形式で根拠を明示してください。' },
+      { regex: /最強(の)?/g, keyword: '最強', reason: '「最強」は根拠のない最上級表現として問題になります。', suggestion: '「高い○○力を実現」等、具体的な特長に変更してください。' },
+      { regex: /最高峰/g, keyword: '最高峰', reason: '根拠のない最上級表現です。客観的データが必要です。', suggestion: '「○○の技術を採用した」等、具体的な特徴に変更。' },
+      { regex: /業界初/g, keyword: '業界初', reason: '「業界初」は事実確認と根拠の明示が必要です。', suggestion: '「当社初（○○年調べ）」等、具体的な範囲と根拠を明示してください。' },
+    ]
+  },
+  {
+    category: '若返り・アンチエイジング表現',
+    severity: 'medium',
+    icon: '⏰',
+    patterns: [
+      { regex: /若返/g, keyword: '若返り', reason: '「若返り」は医薬品的効能（時計を逆行させる）と解釈される可能性があります。', suggestion: '「ハリのある肌に」「明るい肌印象に」等に変更してください。' },
+      { regex: /アンチエイジング/gi, keyword: 'アンチエイジング', reason: '「アンチエイジング」は文脈によっては医薬品的効能として問題になります。', suggestion: '「エイジングケア（年齢に応じたお手入れ）」という表現が推奨されます。' },
+      { regex: /シミ.{0,6}(消|取|除)/g, keyword: 'シミを消す等', reason: '化粧品でシミの「消去・除去」を謳うことは認められていません（医薬部外品の承認効能範囲内に限定）。', suggestion: '化粧品の場合は「シミを目立ちにくくする」等の表現に。医薬部外品の承認効能に従ってください。' },
+    ]
+  },
+  {
+    category: '根拠なき比較・体験談',
+    severity: 'low',
+    icon: '💬',
+    patterns: [
+      { regex: /他社(比|製品より|より)/g, keyword: '他社比', reason: '比較広告には客観的な試験データと比較条件の明示が必要です。', suggestion: '「従来品（当社製品名）との比較（試験条件：○○）」等、根拠を明示してください。' },
+      { regex: /\d+倍(の効果)?/g, keyword: '○○倍表現', reason: '倍率の表現には根拠となる比較試験データの開示が必要です。', suggestion: '「○○比較試験（n=○○）で△△倍の吸収率を確認」等の形式で出典を明示。' },
+    ]
+  },
+];
+
+// ═══════════════════════════════════════════════════════
+//  CHECK ENGINE
+// ═══════════════════════════════════════════════════════
+function runCheck(text) {
+  const results = [];
+  YAKKI_RULES.forEach(rule => {
+    rule.patterns.forEach(p => {
+      const regex = new RegExp(p.regex.source, 'g');
+      let match;
+      const matches = [];
+      while ((match = regex.exec(text)) !== null) {
+        const start = Math.max(0, match.index - 20);
+        const end = Math.min(text.length, match.index + match[0].length + 20);
+        const context = text.substring(start, end);
+        matches.push({ matched: match[0], context });
+      }
+      if (matches.length > 0) {
+        results.push({
+          category: rule.category,
+          severity: rule.severity,
+          icon: rule.icon,
+          keyword: p.keyword,
+          reason: p.reason,
+          suggestion: p.suggestion,
+          matches,
+        });
+      }
+    });
+  });
+  return results;
+}
+
+function getRiskLevel(results) {
+  if (results.some(r => r.severity === 'critical')) return 'critical';
+  if (results.some(r => r.severity === 'high')) return 'high';
+  if (results.some(r => r.severity === 'medium')) return 'medium';
+  if (results.some(r => r.severity === 'low')) return 'low';
+  return 'none';
+}
+
+function getRiskLabel(level) {
+  const map = { critical: 'Critical', high: '高リスク', medium: '中リスク', low: '低リスク', none: '問題なし' };
+  return map[level] || level;
+}
+
+function getScore(results) {
+  if (results.length === 0) return { grade: 'A', score: 95, label: '問題なし', color: 'var(--success)' };
+  const critical = results.filter(r => r.severity === 'critical').length;
+  const high = results.filter(r => r.severity === 'high').length;
+  const med = results.filter(r => r.severity === 'medium').length;
+  const low = results.filter(r => r.severity === 'low').length;
+  const total = critical * 30 + high * 15 + med * 8 + low * 3;
+  if (total >= 30) return { grade: 'D', score: Math.max(0, 100 - total), label: '要修正（重大）', color: 'var(--danger)' };
+  if (total >= 15) return { grade: 'C', score: Math.max(30, 100 - total), label: '要確認（要修正）', color: 'var(--warning)' };
+  if (total >= 5) return { grade: 'B', score: Math.max(60, 100 - total), label: '軽微な問題あり', color: 'var(--primary)' };
+  return { grade: 'A', score: 90, label: '概ね問題なし', color: 'var(--success)' };
+}
+
+function highlightText(text, results) {
+  let html = escHtml(text);
+  // Collect all match positions for highlight
+  const spans = [];
+  results.forEach(r => {
+    r.matches.forEach(m => {
+      const kwRegex = new RegExp(escRegex(m.matched), 'g');
+      let match;
+      while ((match = kwRegex.exec(text)) !== null) {
+        spans.push({ start: match.index, end: match.index + match[0].length, severity: r.severity, text: match[0] });
+      }
+    });
+  });
+  spans.sort((a, b) => b.start - a.start);
+  const chars = text.split('');
+  spans.forEach(s => {
+    const cls = `hl-${s.severity}`;
+    chars.splice(s.end, 0, '</span>');
+    chars.splice(s.start, 0, `<span class="${cls}">`);
+  });
+  return chars.join('').replace(/\n/g, '<br>');
+}
+
+function escHtml(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+// ═══════════════════════════════════════════════════════
+//  RENDER HELPERS
+// ═══════════════════════════════════════════════════════
+function renderCheckItems(results) {
+  if (results.length === 0) return `<div style="text-align:center;padding:24px;color:var(--success)">✅ 薬機法上の問題は検出されませんでした</div>`;
+  return results.map(r => `
+    <div class="check-item check-item-${r.severity}">
+      <div class="check-item-header">
+        <div class="check-item-title">${r.icon} ${r.category} — 「${r.keyword}」</div>
+        <span class="risk-badge risk-${r.severity}">${getRiskLabel(r.severity)}</span>
+      </div>
+      <div class="check-item-body">
+        ${r.matches.map(m => `
+          <div class="violation-text violation-text-${r.severity}">
+            ...${escHtml(m.context).replace(escRegex(escHtml(m.matched)), `<span class="highlight-${r.severity}">${escHtml(m.matched)}</span>`)}...
+          </div>
+        `).join('')}
+        <div class="violation-reason">⚠️ ${r.reason}</div>
+        <div class="suggestion-box">
+          <div class="suggestion-label">💡 修正提案</div>
+          <div class="suggestion-text">${r.suggestion}</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function statusBadge(status) {
+  const map = {
+    draft: ['下書き', 'draft'],
+    submitted: ['提出済み', 'submitted'],
+    reviewing: ['レビュー中', 'reviewing'],
+    approved: ['✓ 承認済み', 'approved'],
+    revision: ['要修正', 'revision'],
+    rejected: ['却下', 'rejected'],
+  };
+  const [label, cls] = map[status] || [status, 'draft'];
+  return `<span class="status-badge status-${cls}">${label}</span>`;
+}
+
+function riskBadge(level) {
+  const label = getRiskLabel(level);
+  return `<span class="risk-badge risk-${level}">${label}</span>`;
+}
+
+function priorityDot(p) {
+  if (p === 'urgent') return '<span style="color:var(--danger);font-size:12px;font-weight:700">● 至急</span>';
+  if (p === 'high') return '<span style="color:var(--warning);font-size:12px;font-weight:700">● 高</span>';
+  return '<span style="color:var(--slate-400);font-size:12px">● 通常</span>';
+}
+
+function formatDate(d) {
+  if (!d || d === '—') return '—';
+  const date = new Date(d);
+  return `${date.getMonth() + 1}/${date.getDate()}`;
+}
+
+function categoryIcon(cat) {
+  const map = { '化粧品': '💄', '医薬品': '💊', '医薬部外品': '🧴', 'サプリメント': '💊', '健康食品': '🥗' };
+  return map[cat] || '📦';
+}
+
+// ═══════════════════════════════════════════════════════
+//  LOGIN
+// ═══════════════════════════════════════════════════════
+function selectRole(role, el) {
+  selectedRole = role;
+  document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  if (role === 'agency') {
+    document.getElementById('loginEmail').value = 'agency@adpro.jp';
+  } else {
+    document.getElementById('loginEmail').value = 'client@medicalbeau.co.jp';
+  }
+}
+
+function doLogin() {
+  currentUser.role = selectedRole;
+  if (selectedRole === 'agency') {
+    currentUser.name = '田中 雅人'; currentUser.company = 'ADプロ株式会社';
+  } else {
+    currentUser.name = '山田 花子'; currentUser.company = '株式会社メディカルビューティ';
+  }
+  document.getElementById('loginScreen').style.display = 'none';
+  const app = document.getElementById('appShell');
+  app.style.display = 'flex';
+  app.classList.add('visible');
+  setupUser();
+  renderDashboard();
+  renderCRTable(MOCK_CRS);
+}
+
+function doLogout() {
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('appShell').style.display = 'none';
+}
+
+function setupUser() {
+  const avatar = document.getElementById('sidebarAvatar');
+  const name = document.getElementById('sidebarName');
+  const badge = document.getElementById('sidebarBadge');
+  const navNewCR = document.getElementById('navNewCR');
+  name.textContent = currentUser.name;
+  avatar.textContent = currentUser.name[0];
+  if (currentUser.role === 'agency') {
+    avatar.style.background = '#2563EB';
+    badge.textContent = '代理店';
+    badge.className = 'user-role-badge badge-agency';
+    navNewCR.style.display = 'flex';
+  } else {
+    avatar.style.background = '#7C3AED';
+    badge.textContent = 'クライアント';
+    badge.className = 'user-role-badge badge-client';
+    navNewCR.style.display = 'none';
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════════════════
+function navigate(view, navEl) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('view-' + view).classList.add('active');
+  if (navEl) navEl.classList.add('active');
+  currentView = view;
+  const titles = { dashboard: 'ダッシュボード', crlist: 'CR一覧', newcr: '新規CR作成', yakki: '薬機法 AIチェッカー', detail: 'CR詳細' };
+  document.getElementById('pageTitle').textContent = titles[view] || view;
+  const actionsEl = document.getElementById('pageActions');
+  actionsEl.innerHTML = '';
+  if (view === 'crlist' && currentUser.role === 'agency') {
+    actionsEl.innerHTML = `<button class="btn btn-primary btn-sm" onclick="navigate('newcr', document.querySelector('[onclick*=newcr]'))">+ 新規CR作成</button>`;
+  }
+  if (view === 'yakki') {
+    document.getElementById('yakkiInput').addEventListener('input', function() {
+      document.getElementById('charCount').textContent = this.value.length + '文字';
+    });
+  }
+  // Scroll to top
+  document.querySelector('.page-content').scrollTop = 0;
+}
+
+// ═══════════════════════════════════════════════════════
+//  DASHBOARD
+// ═══════════════════════════════════════════════════════
+function renderDashboard() {
+  const recentList = document.getElementById('recentCRList');
+  const recent = MOCK_CRS.slice(0, 5);
+  recentList.innerHTML = recent.map(cr => `
+    <div class="recent-item" onclick="openCRDetail('${cr.id}')">
+      <div class="recent-icon" style="background:${statusColors[cr.status] || '#EFF6FF'}">${categoryIcon(cr.category)}</div>
+      <div class="recent-info">
+        <div class="recent-name">${cr.title}</div>
+        <div class="recent-client">${cr.client}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+        ${statusBadge(cr.status)}
+        <span class="recent-date">${formatDate(cr.submittedDate)}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+const statusColors = {
+  draft: '#F1F5F9', submitted: '#EFF6FF', reviewing: '#FFFBEB',
+  approved: '#ECFDF5', revision: '#FFF7ED', rejected: '#FEF2F2',
+};
+
+// ═══════════════════════════════════════════════════════
+//  CR TABLE
+// ═══════════════════════════════════════════════════════
+function renderCRTable(list) {
+  const tbody = document.getElementById('crTableBody');
+  if (list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📭</div><div class="empty-text">CRが見つかりません</div><div class="empty-sub">検索条件を変更してください</div></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map(cr => `
+    <tr onclick="openCRDetail('${cr.id}')">
+      <td><div class="cr-id">${cr.id}</div></td>
+      <td>
+        <div class="cr-name">${cr.title}</div>
+        <div class="cr-client">${cr.client}</div>
+      </td>
+      <td><span class="tag">${categoryIcon(cr.category)} ${cr.category}</span></td>
+      <td>${statusBadge(cr.status)}</td>
+      <td>${riskBadge(cr.riskLevel)}</td>
+      <td><div class="cr-date">${cr.submittedDate}</div></td>
+      <td><div class="cr-date">${cr.assignee}</div></td>
+    </tr>
+  `).join('');
+}
+
+function filterCRs() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const status = document.getElementById('statusFilter').value;
+  const cat = document.getElementById('categoryFilter').value;
+  const filtered = MOCK_CRS.filter(cr => {
+    const matchQ = !q || cr.title.toLowerCase().includes(q) || cr.client.toLowerCase().includes(q);
+    const matchStatus = !status || cr.status === status;
+    const matchCat = !cat || cr.category === cat;
+    return matchQ && matchStatus && matchCat;
+  });
+  renderCRTable(filtered);
+}
+
+// ═══════════════════════════════════════════════════════
+//  CR DETAIL
+// ═══════════════════════════════════════════════════════
+function openCRDetail(id) {
+  currentCRId = id;
+  const cr = MOCK_CRS.find(c => c.id === id);
+  if (!cr) return;
+  navigate('detail', null);
+
+  const results = runCheck(cr.copy);
+  const risk = getRiskLevel(results);
+  const score = getScore(results);
+  const isAgency = currentUser.role === 'agency';
+  const isClient = currentUser.role === 'client';
+
+  // AI Banner
+  let aiBanner = '';
+  if (risk === 'critical') {
+    aiBanner = `<div class="ai-check-banner ai-check-critical"><div class="ai-icon">🚨</div><div><div class="ai-summary-title">薬機法 Critical違反が検出されました</div><div class="ai-summary-desc">${results.filter(r => r.severity === 'critical').length}件の重大な問題があります。掲載前に必ず修正が必要です。</div></div></div>`;
+  } else if (risk === 'high' || risk === 'medium') {
+    aiBanner = `<div class="ai-check-banner ai-check-warning"><div class="ai-icon">⚠️</div><div><div class="ai-summary-title">薬機法上、確認が必要な表現が見つかりました</div><div class="ai-summary-desc">${results.length}件の問題候補があります。担当者と確認のうえ修正を検討してください。</div></div></div>`;
+  } else {
+    aiBanner = `<div class="ai-check-banner ai-check-safe"><div class="ai-icon">✅</div><div><div class="ai-summary-title">薬機法上の重大な問題は検出されませんでした</div><div class="ai-summary-desc">テキストに明らかな薬機法違反は見当たりません。</div></div></div>`;
+  }
+
+  // Approval panel
+  let approvalPanel = '';
+  if (isClient && (cr.status === 'submitted' || cr.status === 'reviewing')) {
+    approvalPanel = `
+      <div class="action-buttons">
+        <button class="btn btn-success" onclick="openModal('approve','${id}')">✓ 承認する</button>
+        <button class="btn btn-warning" onclick="openModal('revision','${id}')">↩ 要修正として返却</button>
+        <button class="btn btn-danger" onclick="openModal('reject','${id}')">✕ 却下する</button>
+      </div>`;
+  } else if (isAgency && cr.status === 'revision') {
+    approvalPanel = `
+      <div class="action-buttons">
+        <button class="btn btn-primary" onclick="openModal('resubmit','${id}')">📤 修正版を再提出</button>
+      </div>`;
+  } else {
+    const statusDesc = {
+      approved: '✅ このCRは承認済みです',
+      draft: '📝 下書き状態です。提出してください',
+      rejected: '❌ このCRは却下されました',
+      submitted: '⏳ クライアントのレビューを待っています',
+      reviewing: '🔍 クライアントがレビュー中です',
+    };
+    approvalPanel = `<p style="color:var(--slate-500);font-size:13px">${statusDesc[cr.status] || ''}</p>`;
+  }
+
+  // Files
+  const filesHtml = cr.files.length === 0 ? '<div style="color:var(--slate-400);font-size:13px">添付ファイルなし</div>' :
+    cr.files.map(f => `<div class="upload-file-chip">📄 ${f.name} <span style="color:var(--slate-400)">${f.size}</span></div>`).join('');
+
+  // Comments
+  const avatarColors = { agency: '#2563EB', client: '#7C3AED' };
+  const commentsHtml = cr.comments.length === 0 ? '<div style="color:var(--slate-400);font-size:13px">コメントなし</div>' :
+    cr.comments.map(c => `
+      <div class="comment-item">
+        <div class="comment-avatar" style="background:${avatarColors[c.role] || '#64748B'}">${c.author[0]}</div>
+        <div class="comment-bubble">
+          <div class="comment-header">
+            <span class="comment-author">${c.author}</span>
+            <span class="tag" style="font-size:10px">${c.role === 'agency' ? '代理店' : 'クライアント'}</span>
+            <span class="comment-time">${c.time}</span>
+          </div>
+          <div class="comment-text">${escHtml(c.text)}</div>
+        </div>
+      </div>
+    `).join('');
+
+  const detailContent = document.getElementById('detailContent');
+  detailContent.className = 'anim-in';
+  detailContent.innerHTML = `
+    <div class="back-btn" onclick="history.go(-1) || navigate('crlist', document.querySelector('[onclick*=crlist]'))">← 一覧に戻る</div>
+    <div class="detail-header">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+          <div class="detail-title">${cr.title}</div>
+          ${priorityDot(cr.priority)}
+        </div>
+        <div class="detail-meta">
+          <div class="meta-item"><strong>ID:</strong> ${cr.id}</div>
+          <div class="meta-item"><strong>クライアント:</strong> ${cr.client}</div>
+          <div class="meta-item"><strong>カテゴリ:</strong> ${categoryIcon(cr.category)} ${cr.category}</div>
+          <div class="meta-item"><strong>素材:</strong> ${cr.type}</div>
+          <div class="meta-item"><strong>期限:</strong> ${cr.deadline}</div>
+          <div class="meta-item"><strong>担当:</strong> ${cr.assignee}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:flex-start;flex-shrink:0">
+        ${statusBadge(cr.status)}
+        ${riskBadge(risk)}
+      </div>
+    </div>
+
+    <div class="detail-grid">
+      <div class="detail-main">
+        <!-- AI CHECK BANNER -->
+        ${aiBanner}
+
+        <!-- COPY TEXT -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📝 テキストコピー</div>
+            <span style="font-size:12px;color:var(--slate-400)">ハイライトは薬機法チェック結果</span>
+          </div>
+          <div class="card-body">
+            <div class="copy-text">${highlightText(cr.copy, results)}</div>
+          </div>
+        </div>
+
+        <!-- YAKKI CHECK RESULTS -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">⚖️ 薬機法 AI チェック結果</div>
+            <span class="risk-badge risk-${risk}">${results.length}件検出</span>
+          </div>
+          <div class="card-body">
+            <div class="check-items">${renderCheckItems(results)}</div>
+          </div>
+        </div>
+
+        <!-- COMMENTS -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">💬 コメント</div>
+            <span style="font-size:12px;color:var(--slate-400)">${cr.comments.length}件</span>
+          </div>
+          <div class="card-body">
+            <div class="comment-list">${commentsHtml}</div>
+            <div class="divider"></div>
+            <div class="comment-input-area">
+              <div class="comment-avatar" style="background:${currentUser.role === 'agency' ? '#2563EB' : '#7C3AED'};width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:13px;font-weight:700;flex-shrink:0">${currentUser.name[0]}</div>
+              <div style="flex:1">
+                <textarea class="comment-textarea" id="commentInput" placeholder="コメントを入力..." rows="3"></textarea>
+                <div style="display:flex;justify-content:flex-end;margin-top:8px">
+                  <button class="btn btn-primary btn-sm" onclick="addComment('${cr.id}')">送信</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SIDEBAR -->
+      <div class="detail-sidebar">
+        <!-- STATUS CARD -->
+        <div class="card">
+          <div class="card-header"><div class="card-title">アクション</div></div>
+          <div class="card-body">
+            ${approvalPanel}
+          </div>
+        </div>
+
+        <!-- RISK SUMMARY -->
+        <div class="card">
+          <div class="card-header"><div class="card-title">📊 リスクサマリー</div></div>
+          <div class="card-body">
+            <div style="text-align:center;margin-bottom:16px">
+              <div class="score-circle score-${score.grade}" style="margin:0 auto 8px">${score.grade}</div>
+              <div style="font-size:14px;font-weight:700;color:${score.color}">${score.label}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              ${['critical','high','medium','low'].map(sev => {
+                const cnt = results.filter(r => r.severity === sev).length;
+                const labels = { critical: '🚨 Critical', high: '⚠️ 高リスク', medium: '📊 中リスク', low: '💬 低リスク' };
+                const colors = { critical: 'var(--danger)', high: 'var(--warning)', medium: '#CA8A04', low: 'var(--success)' };
+                return `<div style="display:flex;align-items:center;justify-content:space-between">
+                  <span style="font-size:12.5px;color:var(--slate-600)">${labels[sev]}</span>
+                  <span style="font-size:13px;font-weight:700;color:${cnt > 0 ? colors[sev] : 'var(--slate-300)'}">${cnt}件</span>
+                </div>`;
+              }).join('')}
+            </div>
+          </div>
+        </div>
+
+        <!-- FILES -->
+        <div class="card">
+          <div class="card-header"><div class="card-title">📎 添付ファイル</div></div>
+          <div class="card-body">
+            <div style="display:flex;flex-wrap:wrap;gap:8px">${filesHtml}</div>
+          </div>
+        </div>
+
+        <!-- TIMELINE -->
+        <div class="card">
+          <div class="card-header"><div class="card-title">🕐 履歴</div></div>
+          <div class="card-body">
+            <div class="activity-list">
+              <div class="activity-item">
+                <div class="activity-dot" style="background:var(--primary)"></div>
+                <div>
+                  <div class="activity-text">提出</div>
+                  <div class="activity-time">${cr.submittedDate}</div>
+                </div>
+              </div>
+              ${cr.status !== 'draft' && cr.status !== 'submitted' ? `
+              <div class="activity-item">
+                <div class="activity-dot" style="background:var(--warning)"></div>
+                <div>
+                  <div class="activity-text">レビュー開始</div>
+                  <div class="activity-time">${cr.submittedDate}</div>
+                </div>
+              </div>` : ''}
+              ${cr.status === 'approved' ? `
+              <div class="activity-item">
+                <div class="activity-dot" style="background:var(--success)"></div>
+                <div>
+                  <div class="activity-text">承認済み</div>
+                  <div class="activity-time">${cr.deadline}</div>
+                </div>
+              </div>` : ''}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════
+//  COMMENTS
+// ═══════════════════════════════════════════════════════
+function addComment(crId) {
+  const input = document.getElementById('commentInput');
+  const text = input.value.trim();
+  if (!text) { showToast('コメントを入力してください'); return; }
+  const cr = MOCK_CRS.find(c => c.id === crId);
+  if (!cr) return;
+  cr.comments.push({ author: currentUser.name, role: currentUser.role, time: 'たった今', text });
+  input.value = '';
+  openCRDetail(crId);
+  showToast('コメントを送信しました');
+}
+
+// ═══════════════════════════════════════════════════════
+//  APPROVAL MODAL
+// ═══════════════════════════════════════════════════════
+function openModal(type, crId) {
+  pendingActionType = type;
+  currentCRId = crId;
+  const modal = document.getElementById('approvalModal');
+  const title = document.getElementById('modalTitle');
+  const desc = document.getElementById('modalDesc');
+  const btn = document.getElementById('modalConfirmBtn');
+  const configs = {
+    approve: { title: 'CRを承認しますか？', desc: '承認するとエージェンシーに通知が送られます。', btnClass: 'btn-success', btnLabel: '✓ 承認する' },
+    revision: { title: '要修正として返却しますか？', desc: '修正依頼コメントと共にエージェンシーに返却されます。', btnClass: 'btn-warning', btnLabel: '↩ 要修正で返却' },
+    reject: { title: 'CRを却下しますか？', desc: 'この操作は取り消せません。却下理由をコメントに記入してください。', btnClass: 'btn-danger', btnLabel: '✕ 却下する' },
+    resubmit: { title: '修正版を再提出しますか？', desc: 'クライアントに修正版として提出されます。', btnClass: 'btn-primary', btnLabel: '📤 再提出する' },
+  };
+  const cfg = configs[type];
+  title.textContent = cfg.title;
+  desc.textContent = cfg.desc;
+  btn.className = `btn ${cfg.btnClass}`;
+  btn.textContent = cfg.btnLabel;
+  modal.classList.add('open');
+  document.getElementById('modalComment').value = '';
+}
+
+function closeModal() {
+  document.getElementById('approvalModal').classList.remove('open');
+  pendingActionType = null;
+}
+
+function confirmAction() {
+  const comment = document.getElementById('modalComment').value.trim();
+  const cr = MOCK_CRS.find(c => c.id === currentCRId);
+  if (!cr) { closeModal(); return; }
+  const statusMap = { approve: 'approved', revision: 'revision', reject: 'rejected', resubmit: 'submitted' };
+  cr.status = statusMap[pendingActionType] || cr.status;
+  if (comment) {
+    cr.comments.push({ author: currentUser.name, role: currentUser.role, time: 'たった今', text: comment });
+  }
+  closeModal();
+  const msgs = { approve: '✅ CRを承認しました', revision: '↩ 要修正として返却しました', reject: '✕ CRを却下しました', resubmit: '📤 修正版を再提出しました' };
+  showToast(msgs[pendingActionType]);
+  openCRDetail(currentCRId);
+  updateBadge();
+}
+
+function updateBadge() {
+  const pending = MOCK_CRS.filter(c => c.status === 'submitted' || c.status === 'reviewing').length;
+  const badge = document.getElementById('pendingBadge');
+  badge.textContent = pending;
+  badge.style.display = pending > 0 ? '' : 'none';
+}
+
+// ═══════════════════════════════════════════════════════
+//  NEW CR
+// ═══════════════════════════════════════════════════════
+const mockFiles = ['LP_design_draft.pdf', 'banner_v2.jpg', 'SNS_image.png', 'video_script.docx'];
+let uploadCount = 0;
+
+function simulateUpload() {
+  if (uploadCount >= mockFiles.length) { showToast('サンプルファイルはすべて追加済みです'); return; }
+  const f = mockFiles[uploadCount++];
+  const container = document.getElementById('uploadedFiles');
+  const chip = document.createElement('div');
+  chip.className = 'upload-file-chip';
+  chip.innerHTML = `📄 ${f} <span style="color:var(--slate-400);font-size:11px">追加済み</span>`;
+  container.appendChild(chip);
+  showToast(`${f} を追加しました`);
+}
+
+function preCheckCopy() {
+  const text = document.getElementById('newCRCopy').value.trim();
+  const result = document.getElementById('preCheckResult');
+  if (!text) { showToast('テキストを入力してください'); return; }
+  const results = runCheck(text);
+  const risk = getRiskLevel(results);
+  if (risk === 'none') {
+    result.innerHTML = `<div style="background:var(--success-light);border:1px solid #A7F3D0;border-radius:10px;padding:14px;margin-top:12px;color:var(--success);font-weight:600">✅ 薬機法上の問題は検出されませんでした</div>`;
+  } else {
+    result.innerHTML = `
+      <div style="margin-top:12px">
+        <div style="font-size:13px;font-weight:700;color:var(--slate-700);margin-bottom:10px">⚖️ 事前チェック結果（${results.length}件の問題を検出）</div>
+        <div class="check-items">${renderCheckItems(results)}</div>
+      </div>`;
+  }
+}
+
+function saveDraft() {
+  const title = document.getElementById('newCRTitle').value.trim();
+  if (!title) { showToast('タイトルを入力してください'); return; }
+  showToast('下書きを保存しました');
+}
+
+function submitCR() {
+  const title = document.getElementById('newCRTitle').value.trim();
+  const client = document.getElementById('newCRClient').value.trim();
+  const category = document.getElementById('newCRCategory').value;
+  const type = document.getElementById('newCRType').value;
+  const copy = document.getElementById('newCRCopy').value.trim();
+  if (!title || !client || !category || !type) { showToast('必須項目を入力してください'); return; }
+
+  const results = runCheck(copy);
+  const risk = getRiskLevel(results);
+  const newId = 'CR-2024-0' + (MOCK_CRS.length + 25);
+  const today = new Date().toISOString().split('T')[0];
+
+  MOCK_CRS.unshift({
+    id: newId, title, client, category, type,
+    status: 'submitted', riskLevel: risk,
+    submittedDate: today, deadline: document.getElementById('newCRDeadline').value || '—',
+    assignee: '未割当', priority: document.getElementById('newCRPriority').value,
+    copy: copy || '（テキストなし）',
+    files: [], comments: [],
+  });
+
+  renderDashboard();
+  renderCRTable(MOCK_CRS);
+  updateBadge();
+  showToast('🎉 CRを提出しました！ID: ' + newId);
+  navigate('crlist', document.querySelector('[onclick*="crlist"]'));
+  // Reset form
+  ['newCRTitle','newCRClient','newCRCopy','newCRNote'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('newCRCategory').value = '';
+  document.getElementById('newCRType').value = '';
+  document.getElementById('preCheckResult').innerHTML = '';
+  document.getElementById('uploadedFiles').innerHTML = '';
+  uploadCount = 0;
+}
+
+// ═══════════════════════════════════════════════════════
+//  YAKKI-HO STANDALONE
+// ═══════════════════════════════════════════════════════
+const SAMPLES = [
+  `このクリームを塗れば、シミが絶対に消えます！
+肌を再生・修復し、老化を治療する奇跡の美容液。
+業界No.1（※自社調べ）の浸透力で、細胞を活性化。
+完璧な美肌を、驚異的な速さで実現します！`,
+
+  `医薬部外品 育毛剤「Re:Growth」
+発毛を促進し、脱毛を必ず止める次世代育毛剤。
+有効成分ミノキシジル配合で薄毛を確実に治す！
+他社製品より3倍の育毛効果（※当社比）。
+業界最強の処方で、若返りを実現します。`,
+];
+
+function loadSample(n) {
+  document.getElementById('yakkiInput').value = SAMPLES[n - 1] || '';
+  document.getElementById('charCount').textContent = SAMPLES[n-1].length + '文字';
+  document.getElementById('yakkiResults').innerHTML = '';
+}
+
+function runYakkiCheck() {
+  const text = document.getElementById('yakkiInput').value.trim();
+  if (!text) { showToast('テキストを入力してください'); return; }
+  const results = runCheck(text);
+  const risk = getRiskLevel(results);
+  const score = getScore(results);
+
+  const catBreakdown = ['critical','high','medium','low'].map(sev => {
+    const cnt = results.filter(r => r.severity === sev).length;
+    const pct = Math.min(100, cnt * 30);
+    const colors = { critical: 'var(--danger)', high: 'var(--warning)', medium: '#CA8A04', low: 'var(--success)' };
+    const labels = { critical: '🚨 Critical違反', high: '⚠️ 高リスク表現', medium: '📊 中リスク表現', low: '💬 低リスク表現' };
+    return `<div class="score-cat-row">
+      <span class="score-cat-name">${labels[sev]}</span>
+      <div class="score-cat-bar"><div class="score-cat-fill" style="width:${pct}%;background:${colors[sev]}"></div></div>
+      <span class="score-cat-val" style="color:${cnt > 0 ? colors[sev] : 'var(--slate-300)'}">${cnt}</span>
+    </div>`;
+  }).join('');
+
+  const highlightedText = highlightText(text, results);
+
+  const resultHtml = `
+    <div class="anim-in">
+      <div class="score-overview">
+        <div class="score-gauge">
+          <div class="score-circle score-${score.grade}">${score.grade}</div>
+          <div style="font-size:13px;font-weight:700;color:${score.color}">${score.label}</div>
+          <div style="font-size:12px;color:var(--slate-400);margin-top:4px">スコア: ${score.score}/100</div>
+        </div>
+        <div class="card" style="padding:16px">
+          <div style="font-size:13px;font-weight:700;color:var(--slate-700);margin-bottom:12px">カテゴリ別リスク</div>
+          <div class="score-cats">${catBreakdown}</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <div class="card-title">📝 テキスト（ハイライト表示）</div>
+        </div>
+        <div class="card-body">
+          <div class="copy-text">${highlightedText}</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">⚖️ 検出結果（${results.length}件）</div>
+          ${riskBadge(risk)}
+        </div>
+        <div class="card-body">
+          <div class="check-items">${renderCheckItems(results)}</div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;padding:14px;background:var(--slate-50);border-radius:10px;border:1px solid var(--slate-200);font-size:12.5px;color:var(--slate-500)">
+        ⚠️ このチェック結果はAIによる参考情報です。薬機法の解釈は個別案件によって異なります。最終判断は薬事専門家または法務担当者にご確認ください。
+      </div>
+    </div>`;
+
+  document.getElementById('yakkiResults').innerHTML = resultHtml;
+  document.querySelector('.page-content').scrollTo({ top: 300, behavior: 'smooth' });
+}
+
+// ═══════════════════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════════════════
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ═══════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  renderDashboard();
+  renderCRTable(MOCK_CRS);
+  updateBadge();
+  // Set default deadline
+  const d = new Date(); d.setDate(d.getDate() + 7);
+  const dl = document.getElementById('newCRDeadline');
+  if (dl) dl.value = d.toISOString().split('T')[0];
+});
+
+// Close modal on overlay click
+document.getElementById('approvalModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+</script>
+</body>
+</html>
